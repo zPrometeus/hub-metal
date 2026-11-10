@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Grade Magnética Automática | Metal Detektor</title>
+<style>
+:root{--fg:#eef2fa;--panel:#161b26e6;--acc:#4cb4f0;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--fg:#eef2fa;--panel:#161b26e6;--acc:#4cb4f0}}
+:root[data-theme="dark"]{--fg:#eef2fa;--panel:#161b26e6;--acc:#4cb4f0}
+html,body{height:100%;margin:0}
+body{background:radial-gradient(ellipse at 50% 30%,#232b3b,#0b0e14);color:var(--fg);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;overflow:hidden}
+#c{position:fixed;inset:0;width:100%;height:100%;display:block}
+h1{position:fixed;top:calc(14px + env(safe-area-inset-top,0px));left:18px;margin:0;font-size:18px;font-weight:600;max-width:calc(100% - 36px)}
+#cap{position:fixed;top:calc(44px + env(safe-area-inset-top,0px));left:18px;margin:0;font-size:14px;line-height:1.4;max-width:min(460px,calc(100% - 36px));opacity:.85}
+#cnt{position:fixed;top:calc(118px + env(safe-area-inset-top,0px));left:18px;margin:0;font-size:14px;color:#ffb347;display:none}
+#ov{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#0b0e14ee}
+#ov h2{margin:0 0 8px;font-weight:600;text-align:center;padding:0 16px}
+#ov button{font-size:16px;padding:12px 20px}
+#fl{position:fixed;inset:0;background:#cfeaff;opacity:0;pointer-events:none}
+.ui{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));display:flex;flex-wrap:wrap;justify-content:center;gap:8px;background:var(--panel);backdrop-filter:blur(8px);padding:10px 12px;border-radius:14px;max-width:calc(100% - 24px)}
+button{background:#2a3347;color:var(--fg);border:0;border-radius:9px;padding:9px 12px;font:inherit;font-size:14px;cursor:pointer}
+button.on{background:var(--acc);color:#07121c}
+</style>
+
+<style>
+.hub-exit {
+  position: fixed; z-index: 8; top: 16px; right: 18px;
+  display: inline-flex; align-items: center; padding: 9px 12px;
+  border-radius: 9px; text-decoration: none; font-size: 11px;
+  font-weight: 700; letter-spacing: .04em; color: var(--fg);
+  background: #252b36; border: 1px solid #505967;
+  transition: border-color .25s ease, background .25s ease;
+}
+.hub-exit:hover, .hub-exit:focus-visible {
+  outline: none; border: 1px solid transparent;
+  background: linear-gradient(#252b36,#252b36) padding-box,
+    linear-gradient(120deg,#e5242b,rgba(229,36,43,.25),#8d252b) border-box;
+}
+button {
+  background: #252b36 !important; color: var(--fg) !important;
+  border: 1px solid #505967 !important; border-radius: 9px;
+  transition: border-color .25s ease, background .25s ease, transform .25s ease;
+}
+button:hover, button:focus-visible {
+  outline: none; border: 1px solid transparent !important;
+  background: linear-gradient(#252b36,#252b36) padding-box,
+    linear-gradient(120deg,#e5242b,rgba(229,36,43,.25),#8d252b) border-box !important;
+}
+button.on {
+  background: linear-gradient(#252b36,#252b36) padding-box,
+    linear-gradient(120deg,#e5242b,rgba(229,36,43,.35),#8d252b) border-box !important;
+  border: 1px solid transparent !important; color: var(--fg) !important;
+}
+@media (max-width: 620px) {
+  .hub-exit { top: 13px; right: 12px; max-width: 45vw; font-size: 9px; }
+  h1 { top: 54px; font-size: 16px; }
+  #cap { top: 82px; font-size: 12px; }
+}
+</style>
+
+</head>
+<body><a href="../index.html" style="position:fixed;z-index:60;top:12px;left:50%;transform:translateX(-50%);padding:8px 13px;border:1px solid #5a6270;border-radius:8px;background:#161b26e6;color:#eef2fa;font:600 11px system-ui,sans-serif;text-decoration:none;letter-spacing:.03em">← Voltar às apresentações</a>
+<canvas id="c"></canvas>
+<h1>Grade Magnética de Limpeza Automática</h1>
+<a class="hub-exit" href="../index.html">← VOLTAR ÀS APRESENTAÇÕES</a>
+<p id="cap"></p>
+<p id="cnt">Rejeito coletado: <b id="n">0</b></p>
+<div id="fl"></div>
+<div id="ov"><h2>Grade Magnética de Limpeza Automática</h2><button id="go">▶ Iniciar com som</button><button id="ns">Iniciar sem som</button></div>
+<div class="ui">
+<button data-s="1">1 · Visão geral</button>
+<button data-s="2">2 · Passagem do produto</button>
+<button data-s="3">3 · Limpeza interna</button>
+<button id="rs">↻ Reiniciar</button>
+<button id="sb">🔊 Som</button>
+</div>
+<script src="../../assets/vendor/three.min.js"></script>
+<script src="../../assets/vendor/OrbitControls.js"></script>
+<script>
+const T=THREE,cv=document.getElementById('c');
+const r=new T.WebGLRenderer({canvas:cv,antialias:true,alpha:true});
+r.setPixelRatio(Math.min(devicePixelRatio,2));
+const sc=new T.Scene(),cam=new T.PerspectiveCamera(38,1,.1,100);
+cam.position.set(6.2,4.2,8.6);
+const ctl=new T.OrbitControls(cam,cv);
+ctl.enableDamping=true;ctl.autoRotate=true;ctl.autoRotateSpeed=1.1;ctl.target.set(0,1,0);
+sc.add(new T.HemisphereLight(0xffffff,0x445066,.8));
+const dl=new T.DirectionalLight(0xffffff,.85);dl.position.set(5,9,6);sc.add(dl);
+const gr=new T.GridHelper(14,28,0x66708a,0x66708a);gr.material.transparent=true;gr.material.opacity=.25;sc.add(gr);
+
+const body=new T.MeshStandardMaterial({color:0xd3d8df,metalness:.35,roughness:.45,transparent:true});
+const tubeM=new T.MeshStandardMaterial({color:0xb4bac4,metalness:.5,roughness:.3});
+const legM=new T.MeshStandardMaterial({color:0x7d838d,metalness:.5,roughness:.5});
+const glass=new T.MeshStandardMaterial({color:0x6aa9d6,transparent:true,opacity:.35});
+const orange=new T.MeshStandardMaterial({color:0xffb347,roughness:.5});
+const blue=new T.MeshStandardMaterial({color:0x1e6fe0,roughness:.5});
+const edgeM=new T.LineBasicMaterial({color:0x9fb0c8,transparent:true,opacity:.5});
+const slotM=new T.MeshBasicMaterial({color:0x2c3038});
+
+function box(w,h,d,x,y,z,m,edge=true){
+  const geo=new T.BoxGeometry(w,h,d),o=new T.Mesh(geo,m||body);o.position.set(x,y,z);sc.add(o);
+  if(edge)o.add(new T.LineSegments(new T.EdgesGeometry(geo),edgeM));
+  return o;
+}
+function frame(x,y,z,out,inn,t){
+  const b=(out-inn)/2,o=inn/2+b/2;
+  box(out,t,b,x,y,z+o);box(out,t,b,x,y,z-o);box(b,t,inn,x+o,y,z);box(b,t,inn,x-o,y,z);
+}
+function frus(x,y,z,wt,wb,h){
+  const m=new T.Mesh(new T.CylinderGeometry(wt*Math.SQRT2,wb*Math.SQRT2,h,4,1,true),body);
+  m.material.side=T.DoubleSide;m.rotation.y=Math.PI/4;m.position.set(x,y,z);sc.add(m);
+}
+// Escala: 3,3 unidades = 1 m. Desenho: 1956 x 902 x 550 mm
+const n0=sc.children.length;const XS=1.6,ST=2.05,XI=.25,LX=2.17,off=[0,0];
+box(1.98,1.13,2.98,-2.21,1.305,0);   // caixa dos atuadores
+box(2.30,1.13,2.98,-.07,1.305,0);    // câmara dos tubos
+box(2.18,1.27,2.98,LX,1.235,0);      // câmara de rejeito
+[1.0,1.3,1.6].forEach(y=>[-2.75,-2.3].forEach(x=>box(.14,.2,.02,x,y,1.495,slotM,false)));
+frus(XI,.395,0,.85,.5,.69);frame(XI,.05,0,1.22,.99,.05);   // saída do produto 300x300
+frus(LX,.325,0,1.0,.5,.55);frame(LX,.05,0,1.22,.99,.05);   // saída do metal 300x300
+frus(XI,1.97,0,.5,.5,.2);frame(XI,2.09,0,1.22,.99,.05);    // entrada 300x300
+// janela de inspeção com visor
+box(1.8,.04,1.8,LX,1.89,0);box(1.15,.02,1.15,LX,1.92,0,glass,false);frame(LX,1.92,0,1.45,1.15,.04);
+[-.72,.72].forEach(z=>{box(.6,.04,.04,LX,2.06,z,legM,false);box(.04,.14,.04,LX-.28,1.98,z,legM,false);box(.04,.14,.04,LX+.28,1.98,z,legM,false)});
+// olhais de içamento
+[-.95,.95].forEach(dx=>[-1.15,1.15].forEach(z=>{
+  const e=new T.Mesh(new T.TorusGeometry(.09,.02,8,16),legM);e.position.set(XI+dx,1.96,z);sc.add(e);
+}));
+// parafusos
+const bp=[];
+function bolts(cx,cy,cz,h,n){for(let i=0;i<n;i++){const t=-h+2*h*i/n;bp.push([cx+t,cy,cz-h],[cx+h,cy,cz+t],[cx-t,cy,cz+h],[cx-h,cy,cz-t])}}
+bolts(LX,1.94,0,.7,9);bolts(LX,1.91,0,.86,11);bolts(XI,2.12,0,.58,6);bolts(XI,1.89,0,.8,8);
+const bm=new T.InstancedMesh(new T.CylinderGeometry(.025,.025,.04,8),legM,bp.length),du=new T.Object3D();
+bp.forEach((p,i)=>{du.position.set(...p);du.updateMatrix();bm.setMatrixAt(i,du.matrix)});sc.add(bm);
+// válvulas e mangueiras pneumáticas
+[[-2.6,1.5],[-2.6,1.05]].forEach(([x,y])=>box(.32,.3,.14,x,y,1.56,blue,false));
+[[-2.2,1.5],[-2.2,1.05]].forEach(([x,y])=>box(.16,.22,.12,x,y,1.55,legM,false));
+[[1.55,1.0],[1.1,.7]].forEach(([y,h],i)=>{
+  const c=new T.CatmullRomCurve3([new T.Vector3(-2.45,y-.05,1.6),new T.Vector3(-2.3,y+.35,1.95),new T.Vector3(-1.8,y+.3,1.9),new T.Vector3(-1.5,y-.1+(i?.1:0),1.52)]);
+  sc.add(new T.Mesh(new T.TubeGeometry(c,24,.035,8),blue));
+});
+// placa
+const cn=document.createElement('canvas');cn.width=512;cn.height=128;
+const cx=cn.getContext('2d');cx.fillStyle='#f4f5f7';cx.fillRect(0,0,512,128);
+cx.fillStyle='#c0392b';cx.fillRect(30,30,12,68);cx.fillRect(48,30,12,68);
+cx.fillStyle='#222';cx.font='bold 52px sans-serif';cx.textBaseline='middle';cx.fillText('metal detektor',80,66);
+const plate=new T.Mesh(new T.PlaneGeometry(1.5,.38),new T.MeshBasicMaterial({map:new T.CanvasTexture(cn)}));
+plate.position.set(-.07,1.3,1.5);sc.add(plate);
+// tubos magnéticos (2 fileiras em zigue-zague)
+const tubes=[];
+for(let k=0;k<6;k++)tubes.push([1.46,-.75+k*.3,0]);
+for(let k=0;k<5;k++)tubes.push([1.14,-.6+k*.3,1]);
+const ringG=new T.TorusGeometry(.1,.025,8,20);
+const rowG=[new T.Group(),new T.Group()];rowG.forEach(g=>sc.add(g));
+tubes.forEach(([y,z,w])=>{
+  const c=new T.Mesh(new T.CylinderGeometry(.07,.07,2.2,16),tubeM);
+  c.rotation.z=Math.PI/2;c.position.set(-.1,y,z);rowG[w].add(c);
+  const g=new T.Mesh(ringG,orange);g.rotation.y=Math.PI/2;g.position.set(XS,y,z);sc.add(g);
+});
+box(.08,.8,1.9,XS,1.3,0,new T.MeshStandardMaterial({color:0xffb347,transparent:true,opacity:.45}),false); // raspador fixo
+const rods=[];
+[[1.46,0],[1.14,.15]].forEach(([y,z],w)=>{
+  const pl=new T.Mesh(new T.BoxGeometry(.08,.16,1.8),orange);pl.position.set(-1.2,y,0);rowG[w].add(pl);
+  const rd=new T.Mesh(new T.CylinderGeometry(.035,.035,1,10),orange);rd.rotation.z=Math.PI/2;rd.position.set(0,y,z);sc.add(rd);rods.push(rd);
+});
+// peças da introdução (transformação)
+const P=[],PD=[],ctr=new T.Vector3(0,1.2,0);
+sc.children.slice(n0).forEach(o=>{if(rods.includes(o))return;if(rowG.includes(o))o.children.forEach(c=>P.push(c));else P.push(o)});
+P.forEach(o=>{
+  const dir=new T.Vector3(Math.random()-.5,Math.random()*.9+.1,Math.random()-.5).normalize();
+  let rad=.5;if(o.geometry){o.geometry.computeBoundingSphere();rad=o.geometry.boundingSphere.radius}
+  PD.push({fp:o.position.clone(),fq:o.quaternion.clone(),fs:o.scale.clone(),
+    sp:ctr.clone().addScaledVector(dir,6+Math.random()*6),
+    sq:new T.Quaternion().setFromEuler(new T.Euler(Math.random()*6.3,Math.random()*6.3,Math.random()*6.3)),
+    d:.1+Math.min(rad/1.8,1)*2.4+Math.random()*.9,du:1.3+Math.random()*.6,done:0});
+});
+
+// partículas
+const NS=520,NM=80;
+const sp=new Float32Array(NS*3).fill(-100),sv=new Float32Array(NS*3),sa=new Uint8Array(NS);
+const mp=new Float32Array(NM*3).fill(-100),mv=new Float32Array(NM*3),ms=new Uint8Array(NM);
+const mb=new Float32Array(NM),mr=new Uint8Array(NM);
+function pts(arr,col,size){
+  const g=new T.BufferGeometry();g.setAttribute('position',new T.BufferAttribute(arr,3));
+  const p=new T.Points(g,new T.PointsMaterial({color:col,size}));p.frustumCulled=false;sc.add(p);return g.attributes.position;
+}
+const sAttr=pts(sp,0xfff6dc,.1),mAttr=pts(mp,0xff6a1a,.17);
+
+function hit(x,y,z,rad){
+  let k,tz,ty=1.46;
+  if(Math.abs(y-ty)<rad&&x>-1.2+off[0]&&x<1+off[0]&&off[0]<.2){k=Math.max(0,Math.min(5,Math.round((z+.75)/.3)));tz=-.75+k*.3;if(Math.abs(z-tz)<rad)return [ty,tz,0]}
+  ty=1.14;
+  if(Math.abs(y-ty)<rad&&x>-1.2+off[1]&&x<1+off[1]&&off[1]<.2){k=Math.max(0,Math.min(4,Math.round((z+.6)/.3)));tz=-.6+k*.3;if(Math.abs(z-tz)<rad)return [ty,tz,1]}
+  return 0;
+}
+function bound(a,b){
+  const x=a[b],y=a[b+1];
+  let hw=0;
+  if(y>1.87&&y<2.1)hw=.49;else if(y<.74&&y>.05)hw=.5+(y-.05)*.5;
+  if(hw){const dx=x-XI;
+    if(dx>hw)a[b]=XI+hw;else if(dx<-hw)a[b]=XI-hw;
+    if(a[b+2]>hw)a[b+2]=hw;else if(a[b+2]<-hw)a[b+2]=-hw}
+}
+let sPtr=0,mPtr=0,sAcc=0,mAcc=0,count=0,stage=1,pre=0,tt=0;
+function spawnS(){
+  for(let j=0;j<NS;j++){const i=(sPtr++)%NS;if(!sa[i]){const b=i*3;sa[i]=1;
+    sp[b]=XI+(Math.random()-.5)*.9;sp[b+1]=3.0+Math.random()*.4;sp[b+2]=(Math.random()-.5)*.9;sv[b]=sv[b+2]=0;sv[b+1]=-1;return}}
+}
+function spawnM(){
+  let st=0;for(let i=0;i<NM;i++)if(ms[i]===2)st++;
+  if(st>45)return;
+  for(let j=0;j<NM;j++){const i=(mPtr++)%NM;if(!ms[i]){const b=i*3;ms[i]=1;
+    mp[b]=XI+(Math.random()-.5)*.8;mp[b+1]=3.0;mp[b+2]=(Math.random()-.5)*.8;mv[b]=mv[b+2]=0;mv[b+1]=-1;return}}
+}
+function prepop(){
+  for(let n=0;n<14;n++){
+    const i=(mPtr++)%NM,t=tubes[Math.floor(Math.random()*tubes.length)],b=i*3;
+    ms[i]=2;mr[i]=t[2];mb[i]=-.15+Math.random()*.8;mp[b]=mb[i]+off[t[2]];mp[b+1]=t[0]+.075;mp[b+2]=t[1]+(Math.random()-.5)*.03;
+  }
+}
+const ease=t=>t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+function step(dt){
+  if(stage>=2){
+    sAcc+=dt*95;while(sAcc>1){sAcc--;spawnS()}
+    mAcc+=dt*1.6;while(mAcc>1){mAcc--;spawnM()}
+  }
+  for(let i=0;i<NS;i++){
+    if(!sa[i])continue;const b=i*3;
+    sv[b+1]-=9*dt;sv[b]*=1-dt*2;sv[b+2]*=1-dt*2;
+    sp[b]+=sv[b]*dt;sp[b+1]+=sv[b+1]*dt;sp[b+2]+=sv[b+2]*dt;
+    bound(sp,b);
+    const h=hit(sp[b],sp[b+1],sp[b+2],.1);
+    if(h){const s=sp[b+2]>=h[1]?1:-1;sp[b+2]=h[1]+s*.105;sv[b+2]=s*(.6+Math.random()*.6);sv[b+1]*=.3}
+    if(sp[b+1]<-.25){sa[i]=0;sp[b+1]=-100}
+  }
+  for(let i=0;i<NM;i++){
+    const s=ms[i];if(!s)continue;const b=i*3;
+    if(s===1||s===3){
+      mv[b+1]-=9*dt;mp[b]+=mv[b]*dt;mp[b+1]+=mv[b+1]*dt;mp[b+2]+=mv[b+2]*dt;
+      if(s===1){
+        bound(mp,b);
+        const h=hit(mp[b],mp[b+1],mp[b+2],.16);
+        if(h){ms[i]=2;mr[i]=h[2];mb[i]=mp[b]-off[h[2]];mp[b+1]=h[0]+.075;mp[b+2]=h[1]+(Math.random()-.5)*.03;mv[b]=mv[b+1]=mv[b+2]=0}
+      }else if(mp[b+1]<.6){const hw=.5+Math.max(0,mp[b+1]-.05)*1.1,dx=mp[b]-LX;if(dx>hw)mp[b]=LX+hw;else if(dx<-hw)mp[b]=LX-hw}
+      if(mp[b+1]<-.25){ms[i]=0;mp[b+1]=-100;if(s===3){count++;snd.tink();document.getElementById('n').textContent=count}}
+    }else if(s===2){
+      mp[b]=mb[i]+off[mr[i]];
+      if(mp[b]>XS+.02){ms[i]=3;mp[b]=XS+.06;mv[b]=.6+Math.random()*.5;mv[b+1]=0;mv[b+2]=(Math.random()-.5)*.3}
+    }
+  }
+}
+function seg(t,a,d){return ease(Math.max(0,Math.min(1,(t-a)/d)))}
+function carriage(dt){
+  if(stage===3){
+    tt+=dt;
+    off[0]=ST*(seg(tt,1.2,2.5)-seg(tt,4.1,2));   // fileira de cima
+    off[1]=ST*(seg(tt,6.3,2.5)-seg(tt,9.2,2));   // fileira de baixo
+    [[1.2,2.5],[4.1,2],[6.3,2.5],[9.2,2]].forEach(([a,d])=>{if(tt-dt<a&&tt>=a)snd.psst(d);if(tt-dt<a+d&&tt>=a+d)snd.thunk()});if(tt>12.5)tt=0;
+  }else{off[0]+=(0-off[0])*Math.min(dt*3,1);off[1]+=(0-off[1])*Math.min(dt*3,1);tt=0}
+  rowG[0].position.x=off[0];rowG[1].position.x=off[1];
+  rods.forEach((rd,w)=>{rd.position.x=-1.55+off[w]/2;rd.scale.y=.7+off[w]});
+}
+
+// câmera e estágios
+let tw=null;
+function goCam(p,t){tw={t0:performance.now(),p0:cam.position.clone(),q0:ctl.target.clone(),p1:new T.Vector3(...p),q1:new T.Vector3(...t)}}
+const cams=[[[6.2,4.2,8.6],[0,1,0]],[[-1.6,3.2,5.6],[.25,1.3,0]],[[2.4,3.6,7.0],[.7,1.2,0]]];
+const caps=[
+ 'Vista geral do equipamento (proporções do desenho: 1956 x 902 x 550 mm). Arraste para girar, role para aproximar.',
+ 'O açúcar entra pela boca superior e passa pelos tubos magnéticos. As partículas laranja são metal ferroso, que fica retido nos tubos.',
+ 'Limpeza automática: os pistões pneumáticos recuam as fileiras de tubos para a câmara de rejeito, primeiro a de cima e depois a de baixo. O raspador fixo, dentro da câmara de rejeito, retira o metal, que cai e sai pelo duto de rejeito.'];
+const cap=document.getElementById('cap'),cnt=document.getElementById('cnt'),btns=document.querySelectorAll('button[data-s]');
+let at=0;
+function setStage(n){
+  stage=n;snd.level(n);goCam(...cams[n-1]);cap.textContent=caps[n-1];
+  cnt.style.display=n===3?'block':'none';
+  btns.forEach(b=>b.classList.toggle('on',+b.dataset.s===n));
+  if(n===3&&!pre){prepop();pre=1;tt=0}
+}
+const NK=300,kp=new Float32Array(NK*3).fill(-100),kv=new Float32Array(NK*3),kl=new Float32Array(NK);let kPtr=0;
+const kg=new T.BufferGeometry();kg.setAttribute('position',new T.BufferAttribute(kp,3));
+const kpts=new T.Points(kg,new T.PointsMaterial({color:0xffd27a,size:.1,transparent:true,blending:T.AdditiveBlending,depthWrite:false}));kpts.frustumCulled=false;sc.add(kpts);
+function emit(p,n){for(let j=0;j<n;j++){const i=(kPtr++)%NK,b=i*3;kp[b]=p.x;kp[b+1]=p.y;kp[b+2]=p.z;kv[b]=(Math.random()-.5)*3;kv[b+1]=Math.random()*2.5;kv[b+2]=(Math.random()-.5)*3;kl[i]=.5+Math.random()*.5}}
+function sparks(dt){
+  for(let i=0;i<NK;i++){if(kl[i]<=0)continue;const b=i*3;kl[i]-=dt;kv[b+1]-=6*dt;kp[b]+=kv[b]*dt;kp[b+1]+=kv[b+1]*dt;kp[b+2]+=kv[b+2]*dt;if(kl[i]<=0)kp[b+1]=-100}
+  kg.attributes.position.needsUpdate=true;
+}
+let introT=-1,autoOn=false,iph=-1;
+const snd=(()=>{
+  let ac,out,rev,fg,on=true,lv=0,st=0,next=0,lastC=0;
+  const sb=document.getElementById('sb');
+  const R=[146.83,116.54,174.61,130.81],M=[[0,7,5,3],[10,12,7,5],[5,8,12,10],[7,5,3,0]];
+  const mf=n=>440*Math.pow(2,(n-69)/12);
+  function init(){
+    if(ac)return;ac=new (window.AudioContext||window.webkitAudioContext)();
+    const comp=ac.createDynamicsCompressor();out=ac.createGain();out.gain.value=on?.7:0;out.connect(comp);comp.connect(ac.destination);
+    const len=ac.sampleRate*2.2,buf=ac.createBuffer(2,len,ac.sampleRate);
+    for(let c=0;c<2;c++){const d=buf.getChannelData(c);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,2.5)}
+    rev=ac.createConvolver();rev.buffer=buf;const rg=ac.createGain();rg.gain.value=.35;rev.connect(rg);rg.connect(out);
+    next=ac.currentTime+.1;setInterval(sched,80);
+    const fb=ac.createBuffer(1,ac.sampleRate*2,ac.sampleRate),fd=fb.getChannelData(0);
+    for(let i=0;i<fd.length;i++)fd[i]=Math.random()*2-1;
+    const fsrc=ac.createBufferSource();fsrc.buffer=fb;fsrc.loop=true;
+    const ff=ac.createBiquadFilter();ff.type='bandpass';ff.frequency.value=2600;ff.Q.value=.5;
+    fg=ac.createGain();fg.gain.value=0;fsrc.connect(ff);ff.connect(fg);fg.connect(out);fsrc.start();setFall();
+  }
+  function tone(f,t,dur,type,vol,fc,att=.02,send=.4){
+    const o=ac.createOscillator(),g=ac.createGain(),fl=ac.createBiquadFilter(),x=ac.createGain();
+    o.type=type;o.frequency.value=f;fl.type='lowpass';fl.frequency.value=fc;
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(vol,t+att);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+    o.connect(fl);fl.connect(g);g.connect(out);x.gain.value=send;g.connect(x);x.connect(rev);o.start(t);o.stop(t+dur+.05);
+  }
+  function noise(t,dur,type,fc,vol,fe,send=.3){
+    const n=Math.floor(ac.sampleRate*dur),b=ac.createBuffer(1,n,ac.sampleRate),d=b.getChannelData(0);
+    for(let i=0;i<n;i++)d[i]=Math.random()*2-1;
+    const s=ac.createBufferSource(),f=ac.createBiquadFilter(),g=ac.createGain(),x=ac.createGain();
+    s.buffer=b;f.type=type;f.frequency.setValueAtTime(fc,t);if(fe)f.frequency.exponentialRampToValueAtTime(fe,t+dur);
+    g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+    s.connect(f);f.connect(g);g.connect(out);x.gain.value=send;g.connect(x);x.connect(rev);s.start(t);
+  }
+  function kick(t,v){
+    const o=ac.createOscillator(),g=ac.createGain();o.frequency.setValueAtTime(140,t);o.frequency.exponentialRampToValueAtTime(40,t+.25);
+    g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0001,t+.5);o.connect(g);g.connect(out);o.start(t);o.stop(t+.55);
+    noise(t,.12,'lowpass',900,v*.4,0,.2);
+  }
+  function sched(){while(next<ac.currentTime+.3){play(st,next);next+=.15;st++}}
+  function play(s,t){
+    if(!on)return;
+    if(lv>=2)for(let k=0;k<7;k++)noise(t+Math.random()*.15,.02,'bandpass',2500+Math.random()*4500,.06,0,.05);
+    const ch=((s/32)|0)%4,root=R[ch],q=s%32,tri=ch?[1,1.26,1.498]:[1,1.189,1.498];
+    if(q===0){
+      tone(root/2,t,4.6,'sawtooth',.16,260,.6);
+      if(lv>=1)tri.forEach(m=>tone(root*2*m,t,4.6,'sawtooth',.045,900,1,.7));
+    }
+    if(lv===0&&q%8===0)kick(t,.45);
+    if(lv===1&&q%8===0)kick(t,.8);
+    if(lv>=1&&q%8===0)tone(mf(62+M[ch][q/8]),t,.95,'sawtooth',.08,2400,.05,.5);
+    if(lv>=2){
+      if(q%2===0){tone(root,t,.18,'sawtooth',.07,q%8===0?900:500,.005,.1);noise(t,.04,'highpass',8000,.05,0,.05)}
+      if(q%4===0)kick(t,q%8===0?.9:.6);
+    }
+    if(lv>=3&&q%8===4)noise(t,.15,'bandpass',1800,.3,0,.3);
+  }
+  function intro(){
+    if(!ac)return;const t=ac.currentTime+.05;
+    const n=Math.floor(ac.sampleRate*6.4),b=ac.createBuffer(1,n,ac.sampleRate),d=b.getChannelData(0);
+    for(let i=0;i<n;i++)d[i]=Math.random()*2-1;
+    const s=ac.createBufferSource(),f=ac.createBiquadFilter(),g=ac.createGain();
+    s.buffer=b;f.type='bandpass';f.Q.value=1.2;f.frequency.setValueAtTime(150,t);f.frequency.exponentialRampToValueAtTime(6000,t+6.2);
+    g.gain.setValueAtTime(.02,t);g.gain.linearRampToValueAtTime(.45,t+6.2);g.gain.linearRampToValueAtTime(0,t+6.4);
+    s.connect(f);f.connect(g);g.connect(out);s.start(t);
+    const bt=t+6.2,o=ac.createOscillator(),og=ac.createGain();
+    o.frequency.setValueAtTime(70,bt);o.frequency.exponentialRampToValueAtTime(28,bt+1.6);
+    og.gain.setValueAtTime(1.3,bt);og.gain.exponentialRampToValueAtTime(.0001,bt+2);o.connect(og);og.connect(out);o.start(bt);o.stop(bt+2.1);
+    noise(bt,1.4,'lowpass',1500,.8,200,.6);noise(bt,1.8,'highpass',3000,.25,0,.6);
+    [0,7,12,16].forEach((m,i)=>tone(mf(50+m),bt+.05+i*.04,3,'sawtooth',.06,1800,.02,.8));
+  }
+  function setFall(){if(fg)fg.gain.setTargetAtTime(lv>=2?.11:0,ac.currentTime,.4)}
+  function ok(){return ac&&on}
+  function setOn(v){on=v;sb.textContent=on?'🔊 Som':'🔇 Mudo';if(ac)out.gain.setTargetAtTime(on?.7:0,ac.currentTime,.05)}
+  return{init,intro:()=>{if(ok())intro()},level:n=>{lv=n;setFall()},setOn,
+    toggle(){if(!ac)init();if(ac)ac.resume();setOn(!on)},
+    clank(){if(!ok())return;const t=ac.currentTime;if(t-lastC<.05)return;lastC=t;noise(t,.08,'bandpass',2400,.22,0,.2);tone(800+Math.random()*1200,t,.12,'square',.04,3000,.001,.2)},
+    psst(d=2.2){if(!ok())return;const t=ac.currentTime;tone(180,t,.06,'square',.08,1200,.001,.1);noise(t+.02,.45,'highpass',3500,.38,700,.25);noise(t+.02,.3,'bandpass',1200,.15,0,.2);noise(t,d,'lowpass',450,.12,0,.1)},
+    thunk(){if(!ok())return;const t=ac.currentTime;tone(95,t,.25,'sine',.35,400,.002,.2);noise(t,.07,'bandpass',900,.3,0,.2);noise(t+.03,.25,'highpass',3000,.15,1500,.2)},
+    tink(){if(ok())tone(2200+Math.random()*800,ac.currentTime,.2,'triangle',.08,6000,.001,.5)}};
+})();
+const fl=document.getElementById('fl');
+const icaps=['Módulos detectados… reconfigurando.','Acoplando estruturas e tubos magnéticos…','Sistema online: Grade Magnética de Limpeza Automática.'];
+function introStep(dt){
+  introT+=dt;const t=introT;
+  P.forEach((o,i)=>{
+    const d=PD[i],p=Math.max(0,Math.min(1,(t-d.d)/d.du)),e=1-Math.pow(1-p,3),q=p-1;
+    o.position.lerpVectors(d.sp,d.fp,e);
+    if(p<=0)o.position.y+=Math.sin(t*1.4+i)*.12;
+    o.quaternion.copy(d.sq).slerp(d.fq,e);
+    o.scale.copy(d.fs).multiplyScalar(.5+.5*(1+2.70158*q*q*q+1.70158*q*q));
+    if(p>=1&&!d.done){d.done=1;emit(d.fp,4);if(Math.random()<.3)snd.clank()}
+  });
+  const ph=t<2.5?0:t<5.2?1:2;if(ph!==iph){iph=ph;cap.textContent=icaps[ph]}
+  const g=Math.max(0,1-t/6.2),f=t>6.2?Math.max(0,1-(t-6.2)/.7):0,col=t>6.2?0xffffff:0x1e90ff;
+  body.emissive.set(col);tubeM.emissive.set(col);
+  body.emissiveIntensity=tubeM.emissiveIntensity=.7*g+f*.9;
+  fl.style.opacity=f*.45;
+  const s=f*.08;sc.position.set((Math.random()-.5)*s,(Math.random()-.5)*s,0);
+  if(t>7.4)endIntro();
+}
+function endIntro(){
+  introT=-1;
+  P.forEach((o,i)=>{const d=PD[i];o.position.copy(d.fp);o.quaternion.copy(d.fq);o.scale.copy(d.fs);d.done=0});
+  rods.forEach(q=>q.visible=true);
+  body.emissiveIntensity=tubeM.emissiveIntensity=0;fl.style.opacity=0;sc.position.set(0,0,0);
+  if(autoOn){setStage(1);at=setTimeout(()=>{setStage(2);at=setTimeout(()=>setStage(3),12000)},6500)}
+}
+function auto(){
+  clearTimeout(at);autoOn=true;stage=0;introT=0;iph=-1;snd.level(0);snd.intro();
+  rods.forEach(q=>q.visible=false);
+  cnt.style.display='none';btns.forEach(b=>b.classList.remove('on'));
+  cam.position.set(11,5.5,13);ctl.target.set(0,1.1,0);tw=null;
+}
+btns.forEach(b=>b.onclick=()=>{clearTimeout(at);autoOn=false;if(introT>=0)endIntro();setStage(+b.dataset.s)});
+document.getElementById('rs').onclick=()=>{ms.fill(0);mp.fill(-100);count=0;pre=0;document.getElementById('n').textContent=0;auto()};
+const ov=document.getElementById('ov');
+document.getElementById('go').onclick=()=>{snd.init();ov.remove();auto()};
+document.getElementById('ns').onclick=()=>{snd.setOn(false);ov.remove();auto()};
+document.getElementById('sb').onclick=()=>snd.toggle();
+
+function resize(){r.setSize(innerWidth,innerHeight,false);cam.aspect=innerWidth/innerHeight;cam.updateProjectionMatrix()}
+addEventListener('resize',resize);resize();
+let last=performance.now();
+(function loop(now){
+  const dt=Math.min((now-last)/1000,.05);last=now;
+  if(introT>=0)introStep(dt);step(dt);carriage(dt);sparks(dt);sAttr.needsUpdate=mAttr.needsUpdate=true;
+  const tg=stage<=1?1:.13;
+  body.opacity+=(tg-body.opacity)*Math.min(dt*3,1);
+  body.depthWrite=body.opacity>.98;edgeM.opacity=.25+.3*body.opacity;
+  plate.visible=stage<=1;
+  if(tw){
+    const k=ease(Math.min(1,(now-tw.t0)/1500));
+    cam.position.lerpVectors(tw.p0,tw.p1,k);ctl.target.lerpVectors(tw.q0,tw.q1,k);cam.lookAt(ctl.target);
+    if(k>=1)tw=null;
+  }else{ctl.autoRotate=stage<=1;ctl.autoRotateSpeed=stage?1.1:3;ctl.update()}
+  r.render(sc,cam);requestAnimationFrame(loop);
+})(last);
+</script>
+</body>
+</html>

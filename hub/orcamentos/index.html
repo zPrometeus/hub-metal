@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111318">
+  <title>Orçamentos | Metal Detektor</title>
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    .module-topbar { margin-bottom: 0; }
+    .module-back { text-decoration: none; }
+    .module-intro { padding: 44px 0 28px; }
+    .module-intro h1 { font-size: clamp(30px, 4vw, 48px); }
+    .module-grid { display: grid; grid-template-columns: minmax(0, 760px); gap: 18px; padding-bottom: 20px; }
+    .module-card { min-height: 390px; }
+    .module-card .portal-bottom { align-items: flex-end; }
+    .module-card .portal h2 { font-size: clamp(29px, 3vw, 42px); }
+    .module-label { display: inline-flex; align-items: center; gap: 8px; color: #cbd0d8; font-size: 10px; font-weight: 700; letter-spacing: .16em; }
+    .module-label::before { content: ''; display: inline-block; width: 18px; height: 1px; background: #e5242b; }
+    @media (max-width: 650px) { .module-intro { padding-top: 34px; } .module-card { min-height: 370px; } }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar module-topbar">
+  <a class="brand" href="../index.html" aria-label="Metal Detektor - início"><img src="../assets/logo-metal-detektor.png" alt="Metal Detektor"></a>
+  <a class="soft-button module-back" href="../index.html"><span>Voltar ao HUB</span><span class="arrow">↖</span></a>
+</header>
+    <section class="intro module-intro">
+      <div class="eyebrow"><span></span> ENGENHARIA • CUSTOS</div>
+      <h1>Central de <em>Orçamentos</em></h1>
+      <p>Calculadoras técnicas e ferramentas para dimensionamento, composição de custos e formação de preços.</p>
+    </section>
+    <section class="module-grid" aria-label="Calculadoras disponíveis">
+      <a class="portal module-card" href="calculadora-grades.html">
+        <div class="portal-media sheet-media"></div>
+        <div class="portal-shade"></div>
+        <div class="portal-content">
+          <div class="module-label">CALCULADORA • GRADES MAGNÉTICAS</div>
+          <div class="portal-bottom">
+            <div>
+              <div class="portal-index">01 / PRIMEIRA FERRAMENTA</div>
+              <h2>CALCULADORA DE GRADES</h2>
+              <p>Dimensionamento da grade, seleção de ímãs, bastões, vazão, BOM e formação do valor de venda.</p>
+            </div>
+            <span class="soft-button"><span>Abrir calculadora</span><span class="arrow">↗</span></span>
+          </div>
+        </div>
+      </a>
+    </section>
+    <footer class="footer"><span>METAL DETEKTOR <b>®</b></span><span>ORÇAMENTOS • ENGENHARIA</span></footer>
+  </main>
+</body>
+</html>
